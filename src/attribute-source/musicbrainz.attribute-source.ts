@@ -1,0 +1,237 @@
+import {
+	ArtistAttributes,
+	ArtistInformationHelper,
+	AttributeSource,
+	AttributeSourceApiContext,
+	AttributeValue,
+	Logger,
+	TrackAttributes,
+	TrackInformationHelper,
+} from "@sdk";
+import { USER_AGENT } from "../constants.js";
+import Axios, { AxiosError, RawAxiosRequestHeaders } from "axios";
+import {
+	MusicBrainzArtist,
+	MusicBrainzRecordingResponse,
+} from "../type/musicbrainz.js";
+import { CoverArtArchiveResponse } from "../type/cover-art-archive.js";
+import path from "path";
+import { requestMusicBrainz } from "../util/musicbrainz.util.js";
+
+export class MusicBrainzAttributeSource implements AttributeSource {
+	private api!: AttributeSourceApiContext;
+	private logger!: Logger;
+
+	public readonly id = "musicbrainz";
+
+	getName() {
+		return "MusicBrainz";
+	}
+
+	enable(attributeSourceApiContext: AttributeSourceApiContext): void {
+		this.api = attributeSourceApiContext;
+		this.logger = this.api.getLogger();
+
+		this.api.registerTrackAttributes([
+			{
+				key: "title",
+				type: "string",
+				supportsMultiple: false,
+			},
+			{
+				key: "duration",
+				type: "decimal",
+				supportsMultiple: false,
+			},
+			{
+				key: "rating",
+				type: "decimal",
+				supportsMultiple: false,
+			},
+			{
+				key: "genre",
+				type: "string",
+				supportsMultiple: true,
+			},
+		]);
+
+		this.api.registerArtistAttributes([
+			{
+				key: "name",
+				type: "string",
+				supportsMultiple: false,
+			},
+			{
+				key: "genre",
+				type: "string",
+				supportsMultiple: true,
+			},
+			{
+				key: "area",
+				type: "string",
+				supportsMultiple: false,
+			},
+			{
+				key: "area_code",
+				type: "string",
+				supportsMultiple: true,
+			},
+			{
+				key: "disambiguation",
+				type: "string",
+				supportsMultiple: false,
+			},
+		]);
+	}
+
+	async getTrackAttributeValues(
+		helper: TrackInformationHelper,
+	): Promise<TrackAttributes> {
+		const recordingIdentity = await helper.getIdentity(
+			"musicbrainz_recording_id",
+		);
+		if (!recordingIdentity) {
+			return {
+				track: null,
+				artists: null,
+			};
+		}
+
+		try {
+			const data = await requestMusicBrainz<MusicBrainzRecordingResponse>(
+				`/recording/${recordingIdentity.value}`,
+				this.logger,
+				["artist-credits", "genres", "ratings"],
+			);
+
+			const trackAttributes: AttributeValue[] = [];
+			if (data.title) {
+				trackAttributes.push({
+					key: "title",
+					value: data.title,
+				});
+			}
+			if (data.length) {
+				trackAttributes.push({
+					key: "duration",
+					value: data.length / 1000,
+				});
+			}
+			if (data.rating?.value) {
+				trackAttributes.push({
+					key: "rating",
+					value: data.rating.value,
+				});
+			}
+			if (data.genres) {
+				trackAttributes.push(
+					...data.genres.map((genre) => ({
+						key: "genre",
+						value: genre.name,
+					})),
+				);
+			}
+
+			const artists: ArtistAttributes[] = [];
+			if (data["artist-credit"]) {
+				for (const credit of data["artist-credit"]) {
+					const artist = credit.artist;
+
+					if (artist?.id) {
+						artists.push({
+							identifierId: "musicbrainz_artist_id",
+							identifierValue: artist.id,
+							joinPhrase: credit.joinphrase ?? null,
+							attributes: [{ key: "name", value: artist.name }],
+							pluginId: recordingIdentity.pluginId,
+						});
+					}
+				}
+			}
+
+			return {
+				track: trackAttributes,
+				artists: artists,
+			};
+		} catch (e) {
+			if (e instanceof AxiosError) {
+				this.logger.error(
+					`Failed to retrieve recording information from MusicBrainz for Recording "${recordingIdentity.value}":`,
+					{
+						name: e.name,
+						message: e.message,
+						stack: e.stack,
+						code: e.code,
+					},
+				);
+				throw new Error("Request to MusicBrainz failed");
+			}
+			throw e;
+		}
+	}
+
+	async getArtistAttributeValues(
+		helper: ArtistInformationHelper,
+	): Promise<AttributeValue[]> {
+		const artistIdentity = await helper.getIdentity("musicbrainz_artist_id");
+
+		const attributes: AttributeValue[] = [];
+
+		if (artistIdentity) {
+			const data = await requestMusicBrainz<MusicBrainzArtist>(
+				`/artist/${artistIdentity.value}`,
+				this.logger,
+				[
+					"aliases",
+					"annotation",
+					"tags",
+					"ratings",
+					"genres",
+					"url-rels",
+					"area-rels",
+					"artist-rels",
+					"label-rels",
+					"place-rels",
+					"event-rels",
+				],
+			);
+
+			attributes.push({
+				key: "name",
+				value: data.name,
+			});
+
+			data.genres?.forEach((genre) =>
+				attributes.push({
+					key: "genre",
+					value: genre.name,
+				}),
+			);
+
+			if (data.area) {
+				attributes.push({
+					key: "area",
+					value: data.area.name,
+				});
+
+				if (data.area["iso-3166-1-codes"]) {
+					attributes.push(
+						...data.area["iso-3166-1-codes"].map((code) => ({
+							key: "area_code",
+							value: code,
+						})),
+					);
+				}
+			}
+
+			if (data.disambiguation) {
+				attributes.push({
+					key: "disambiguation",
+					value: data.disambiguation,
+				});
+			}
+		}
+
+		return attributes;
+	}
+}
