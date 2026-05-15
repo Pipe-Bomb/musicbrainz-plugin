@@ -11,6 +11,7 @@ import { DiscogsArtistIdentifier } from "./artist-identifier/discogs.artist-iden
 import { SoundCloudArtistPermalinkIdentifier } from "./artist-identifier/soundcloud-artist-permalink.artist-identifier.js";
 import { MusicBrainzExternalUrlSource } from "./musicbrainz.external-url-source.js";
 import { MusicBrainzArtistIdArtistIdentifier } from "./artist-identifier/musicbrainz-artist-id.artist-identifier.js";
+import { MusicBrainzArtistAlbumIdentifier } from "./album-identifier/artist.album-identifier.js";
 
 export default class Plugin implements PipeBomb.Plugin {
 	private api!: PipeBomb.PluginApiContext;
@@ -27,7 +28,7 @@ export default class Plugin implements PipeBomb.Plugin {
 		this.api.registerTrackIdentifier(new ArtistTrackIdentifier());
 		this.api.registerTrackIdentifier(new RecordingTrackIdentifier());
 		this.api.registerTrackIdentifier(new ReleaseGroupTrackIdentifier());
-		this.api.registerTrackIdentifier(new ReleaseTrackIdentifier());
+		// this.api.registerTrackIdentifier(new ReleaseTrackIdentifier());
 
 		this.api.registerArtistIdentifier(new SpotifyArtistIdentifier());
 		this.api.registerArtistIdentifier(new DiscogsArtistIdentifier());
@@ -37,6 +38,8 @@ export default class Plugin implements PipeBomb.Plugin {
 		this.api.registerArtistIdentifier(
 			new MusicBrainzArtistIdArtistIdentifier(),
 		);
+
+		this.api.registerAlbumIdentifier(new MusicBrainzArtistAlbumIdentifier());
 
 		this.api.registerAttributeSource(new MusicBrainzAttributeSource());
 		this.api.registerAttributeSource(new CoverArtArchiveAttributeSource());

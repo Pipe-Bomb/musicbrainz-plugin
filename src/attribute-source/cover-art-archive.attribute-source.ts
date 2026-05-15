@@ -1,4 +1,6 @@
 import {
+	AlbumAttributes,
+	AlbumInformationHelper,
 	ArtistInformationHelper,
 	AttributeSource,
 	AttributeSourceApiContext,
@@ -36,16 +38,32 @@ export class CoverArtArchiveAttributeSource implements AttributeSource {
 				supportsMultiple: false,
 			},
 		]);
+
+		this.api.registerAlbumAttributes([
+			{
+				key: "front",
+				type: "buffer",
+				supportsMultiple: false,
+			},
+			{
+				key: "back",
+				type: "buffer",
+				supportsMultiple: false,
+			},
+		]);
 	}
 
 	getName() {
 		return "Cover Art Archive";
 	}
 
-	private async requestCoverArt(releaseId: string) {
+	private async requestCoverArt(
+		type: "release" | "release-group",
+		releaseId: string,
+	) {
 		const request = async () => {
 			const { data } = await Axios.get<CoverArtArchiveResponse>(
-				`https://coverartarchive.org/release/${releaseId}`,
+				`https://coverartarchive.org/${type}/${releaseId}`,
 				{
 					family: 4,
 					headers: {
@@ -65,7 +83,7 @@ export class CoverArtArchiveAttributeSource implements AttributeSource {
 		}
 	}
 
-	private async toTrackAttribute(
+	private async toAttribute(
 		images: CoverArtImage[],
 		key: string,
 		predicate: (image: CoverArtImage) => boolean,
@@ -95,18 +113,23 @@ export class CoverArtArchiveAttributeSource implements AttributeSource {
 	async getTrackAttributeValues(
 		helper: TrackInformationHelper,
 	): Promise<TrackAttributes> {
-		const releaseIdentity = await helper.getIdentity("musicbrainz_release_id");
+		const releaseGroupIdentity = await helper.getIdentity(
+			"musicbrainz_release_group_id",
+		);
 		const trackAttributePromises: Promise<AttributeValue | null>[] = [];
 
-		if (releaseIdentity) {
+		if (releaseGroupIdentity) {
 			try {
-				const { images } = await this.requestCoverArt(releaseIdentity.value);
+				const { images } = await this.requestCoverArt(
+					"release-group",
+					releaseGroupIdentity.value,
+				);
 
 				trackAttributePromises.push(
-					this.toTrackAttribute(images, "front", (image) => image.front),
+					this.toAttribute(images, "front", (image) => image.front),
 				);
 				trackAttributePromises.push(
-					this.toTrackAttribute(images, "back", (image) => image.back),
+					this.toAttribute(images, "back", (image) => image.back),
 				);
 			} catch (e) {
 				if (e instanceof AxiosError && e.response?.status == 404) {
@@ -134,5 +157,49 @@ export class CoverArtArchiveAttributeSource implements AttributeSource {
 		helper: ArtistInformationHelper,
 	): Promise<AttributeValue[]> {
 		return [];
+	}
+
+	async getAlbumAttributeValues(
+		helper: AlbumInformationHelper,
+	): Promise<AlbumAttributes> {
+		const releaseGroupIdentity = await helper.getIdentity(
+			"musicbrainz_release_group_id",
+		);
+
+		const albumAttributePromises: Promise<AttributeValue | null>[] = [];
+
+		if (releaseGroupIdentity) {
+			try {
+				const { images } = await this.requestCoverArt(
+					"release-group",
+					releaseGroupIdentity.value,
+				);
+
+				albumAttributePromises.push(
+					this.toAttribute(images, "front", (image) => image.front),
+				);
+				albumAttributePromises.push(
+					this.toAttribute(images, "back", (image) => image.back),
+				);
+			} catch (e) {
+				if (e instanceof AxiosError && e.response?.status == 404) {
+					return {
+						album: null,
+						artists: null,
+					};
+				}
+				throw e;
+			}
+		}
+
+		const albumAttributes = await Promise.allSettled(albumAttributePromises);
+
+		return {
+			album: albumAttributes
+				.filter((attribute) => attribute.status == "fulfilled")
+				.map((attribute) => attribute.value)
+				.filter((value) => !!value),
+			artists: null,
+		};
 	}
 }

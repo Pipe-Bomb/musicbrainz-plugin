@@ -3,6 +3,7 @@ import {
 	IdentifierDependency,
 	TrackIdentifierTarget,
 	TrackInformationHelper,
+	Logger,
 } from "@sdk";
 import { ICommonTagsResult } from "music-metadata";
 import { getAcoustIdResults } from "./util/acoustid.util.js";
@@ -19,7 +20,7 @@ export abstract class BaseMetadataIdentifier implements TrackIdentifier {
 		results: AcoustIdResult[],
 	): string[] | null;
 
-	async identify(helper: TrackInformationHelper): Promise<string[] | null> {
+	protected async checkMetadata(helper: TrackInformationHelper) {
 		const metadata = await getTrackMetadata(helper);
 		if (metadata) {
 			if (this.tag in metadata.common) {
@@ -33,6 +34,10 @@ export abstract class BaseMetadataIdentifier implements TrackIdentifier {
 			}
 		}
 
+		return null;
+	}
+
+	protected async checkChromaprint(helper: TrackInformationHelper) {
 		const identity = await helper.getIdentity("chromaprint");
 		if (identity) {
 			const results = await getAcoustIdResults(identity.value);
@@ -48,6 +53,18 @@ export abstract class BaseMetadataIdentifier implements TrackIdentifier {
 		}
 
 		return null;
+	}
+
+	async identify(
+		helper: TrackInformationHelper,
+		_logger: Logger,
+	): Promise<string[] | null> {
+		const metadataIds = await this.checkMetadata(helper);
+		if (metadataIds?.length) {
+			return metadataIds;
+		}
+
+		return this.checkChromaprint(helper);
 	}
 
 	private filterAcoustIDResults(results: AcoustIdResult[]) {

@@ -1,4 +1,6 @@
 import {
+	AlbumAttributes,
+	AlbumInformationHelper,
 	ArtistAttributes,
 	ArtistInformationHelper,
 	AttributeSource,
@@ -13,6 +15,7 @@ import Axios, { AxiosError, RawAxiosRequestHeaders } from "axios";
 import {
 	MusicBrainzArtist,
 	MusicBrainzRecordingResponse,
+	MusicBrainzReleaseGroup,
 } from "../type/musicbrainz.js";
 import { CoverArtArchiveResponse } from "../type/cover-art-archive.js";
 import path from "path";
@@ -78,6 +81,14 @@ export class MusicBrainzAttributeSource implements AttributeSource {
 			},
 			{
 				key: "disambiguation",
+				type: "string",
+				supportsMultiple: false,
+			},
+		]);
+
+		this.api.registerAlbumAttributes([
+			{
+				key: "title",
 				type: "string",
 				supportsMultiple: false,
 			},
@@ -151,7 +162,7 @@ export class MusicBrainzAttributeSource implements AttributeSource {
 
 			return {
 				track: trackAttributes,
-				artists: artists,
+				artists,
 			};
 		} catch (e) {
 			if (e instanceof AxiosError) {
@@ -233,5 +244,55 @@ export class MusicBrainzAttributeSource implements AttributeSource {
 		}
 
 		return attributes;
+	}
+
+	async getAlbumAttributeValues(
+		helper: AlbumInformationHelper,
+	): Promise<AlbumAttributes> {
+		const releaseGroupId = await helper.getIdentity(
+			"musicbrainz_release_group_id",
+		);
+
+		if (!releaseGroupId) {
+			return {
+				album: null,
+				artists: null,
+			};
+		}
+
+		const releaseGroup = await requestMusicBrainz<MusicBrainzReleaseGroup>(
+			`/release-group/${releaseGroupId.value}`,
+			this.logger,
+			["artist-credits", "annotation", "tags", "genres"],
+		);
+
+		const attributes: AttributeValue[] = [
+			{
+				key: "title",
+				value: releaseGroup.title,
+			},
+		];
+
+		const artists: ArtistAttributes[] = [];
+		if (releaseGroup["artist-credit"]) {
+			for (const credit of releaseGroup["artist-credit"]) {
+				const artist = credit.artist;
+
+				if (artist?.id) {
+					artists.push({
+						identifierId: "musicbrainz_artist_id",
+						identifierValue: artist.id,
+						joinPhrase: credit.joinphrase ?? null,
+						attributes: [{ key: "name", value: artist.name }],
+						pluginId: releaseGroupId.pluginId,
+					});
+				}
+			}
+		}
+
+		return {
+			album: attributes,
+			artists,
+		};
 	}
 }

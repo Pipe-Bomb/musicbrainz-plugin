@@ -169,3 +169,76 @@ export interface MusicBrainzRating {
 	value: number | null;
 	"votes-count": number;
 }
+
+export interface MusicBrainzReleaseGroup {
+	id: string;
+	title: string;
+	/** e.g., "Album", "Single", "EP", "Broadcast", "Other" */
+	"primary-type"?: string | null;
+	"primary-type-id"?: string | null;
+	/** e.g., "Compilation", "Soundtrack", "Live", "Remix", "DJ-mix", "Mixtape/Street" */
+	"secondary-types"?: string[];
+	"secondary-type-ids"?: string[];
+	/** Format: YYYY, YYYY-MM, or YYYY-MM-DD */
+	"first-release-date"?: string;
+	disambiguation?: string;
+
+	"artist-credit"?: MusicBrainzArtistCredit[];
+	releases?: MusicBrainzRelease[];
+
+	genres?: MusicBrainzGenre[];
+	tags?: MusicBrainzTag[];
+	rating?: MusicBrainzRating;
+}
+
+export interface MusicBrainzRelease {
+	id: string;
+	title: string;
+	/** e.g., "Official", "Promotion", "Bootleg", "Pseudo-Release" */
+	status?: string | null;
+	"status-id"?: string | null;
+	/** Specific release date for this version */
+	date?: string;
+	/** ISO 3166-1 alpha-2 country code */
+	country?: string | null;
+	disambiguation?: string;
+	barcode?: string | null;
+	packaging?: string | null;
+	"packaging-id"?: string | null;
+
+	"artist-credit"?: MusicBrainzArtistCredit[];
+	"release-group"?: MusicBrainzReleaseGroup;
+	media?: MusicBrainzMedium[];
+	"release-events"?: MusicBrainzReleaseEvent[];
+}
+
+export interface MusicBrainzMedium {
+	/** e.g., "CD", "Digital Media", "Vinyl" */
+	format?: string;
+	"format-id"?: string;
+	position: number;
+	title?: string;
+	"track-count": number;
+	"track-offset"?: number;
+}
+
+export interface MusicBrainzReleaseEvent {
+	date?: string;
+	area?: MusicBrainzArea;
+}
+
+export interface MusicBrainzRecordingQueryResponse {
+	created: string;
+	count: number;
+	offset: number;
+	recordings: MusicBrainzRecordingResponse[];
+}
+
+export interface MusicBrainzISRC {
+	recordings: MusicBrainzRecordingResponse[];
+}
+
+export interface MusicBrainzRecording {
+	title: string;
+	releases?: MusicBrainzRelease[];
+}
