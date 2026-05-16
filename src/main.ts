@@ -12,6 +12,7 @@ import { SoundCloudArtistPermalinkIdentifier } from "./artist-identifier/soundcl
 import { MusicBrainzExternalUrlSource } from "./musicbrainz.external-url-source.js";
 import { MusicBrainzArtistIdArtistIdentifier } from "./artist-identifier/musicbrainz-artist-id.artist-identifier.js";
 import { MusicBrainzArtistAlbumIdentifier } from "./album-identifier/artist.album-identifier.js";
+import { MusicBrainzConfigManager } from "./musicbrainz.config-manager.js";
 
 export default class Plugin implements PipeBomb.Plugin {
 	private api!: PipeBomb.PluginApiContext;
@@ -23,6 +24,7 @@ export default class Plugin implements PipeBomb.Plugin {
 
 		this.api.registerLanguageDirectory("language");
 		this.api.registerIconDirectory("icons");
+		this.api.registerConfigManager(new MusicBrainzConfigManager());
 
 		this.api.registerTrackIdentifier(new AcoustIDTrackIdentifier());
 		this.api.registerTrackIdentifier(new ArtistTrackIdentifier());
