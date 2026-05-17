@@ -24,12 +24,14 @@ export default class Plugin implements PipeBomb.Plugin {
 
 		this.api.registerLanguageDirectory("language");
 		this.api.registerIconDirectory("icons");
-		this.api.registerConfigManager(new MusicBrainzConfigManager());
 
-		this.api.registerTrackIdentifier(new AcoustIDTrackIdentifier());
-		this.api.registerTrackIdentifier(new ArtistTrackIdentifier());
-		this.api.registerTrackIdentifier(new RecordingTrackIdentifier());
-		this.api.registerTrackIdentifier(new ReleaseGroupTrackIdentifier());
+		const config = new MusicBrainzConfigManager();
+		this.api.registerConfigManager(config);
+
+		this.api.registerTrackIdentifier(new AcoustIDTrackIdentifier(config));
+		this.api.registerTrackIdentifier(new ArtistTrackIdentifier(config));
+		this.api.registerTrackIdentifier(new RecordingTrackIdentifier(config));
+		this.api.registerTrackIdentifier(new ReleaseGroupTrackIdentifier(config));
 		// this.api.registerTrackIdentifier(new ReleaseTrackIdentifier());
 
 		this.api.registerArtistIdentifier(new SpotifyArtistIdentifier());

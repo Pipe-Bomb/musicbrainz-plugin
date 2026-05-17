@@ -3,8 +3,6 @@ import { AcoustIdLookupResponse, AcoustIdResult } from "../type/acoustid.js";
 import { Cache } from "./cache.js";
 import Axios, { AxiosError } from "axios";
 
-const CLIENT_ID = "DntzaHvbAq"; // todo: hide
-
 let lastRequestTime = Date.now();
 
 const cache = new Cache<string, AcoustIdResult[]>({
@@ -21,7 +19,10 @@ const REQUEST_FIELDS = [
 	"compress",
 ];
 
-export async function getAcoustIdResults(chromaprint: string) {
+export async function getAcoustIdResults(
+	chromaprint: string,
+	clientId: string,
+) {
 	const cachedResponse = cache.get(chromaprint);
 	if (cachedResponse) {
 		return cachedResponse;
@@ -39,7 +40,7 @@ export async function getAcoustIdResults(chromaprint: string) {
 	lastRequestTime = now;
 
 	const params = new URLSearchParams();
-	params.set("client", CLIENT_ID);
+	params.set("client", clientId);
 	params.set("meta", REQUEST_FIELDS.join(" "));
 	params.set("duration", parts[0]!);
 	params.set("fingerprint", parts[1]!);

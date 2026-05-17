@@ -9,6 +9,7 @@ import { ICommonTagsResult } from "music-metadata";
 import { getAcoustIdResults } from "./util/acoustid.util.js";
 import { getTrackMetadata } from "./util/track.util.js";
 import { AcoustIdResult } from "./type/acoustid.js";
+import { MusicBrainzConfigManager } from "./musicbrainz.config-manager.js";
 
 const MATCH_THRESHOLD = 0.9;
 
@@ -19,6 +20,8 @@ export abstract class BaseMetadataIdentifier implements TrackIdentifier {
 	protected abstract retrieveFromAcoustId(
 		results: AcoustIdResult[],
 	): string[] | null;
+
+	constructor(private readonly config: MusicBrainzConfigManager) {}
 
 	protected async checkMetadata(helper: TrackInformationHelper) {
 		const metadata = await getTrackMetadata(helper);
@@ -40,13 +43,16 @@ export abstract class BaseMetadataIdentifier implements TrackIdentifier {
 	protected async checkChromaprint(helper: TrackInformationHelper) {
 		const identity = await helper.getIdentity("chromaprint");
 		if (identity) {
-			const results = await getAcoustIdResults(identity.value);
-			if (results?.length) {
-				const candidates = this.filterAcoustIDResults(results);
-				if (candidates.length) {
-					const identities = this.retrieveFromAcoustId(candidates);
-					if (identities?.length) {
-						return identities;
+			const clientId = await this.config.getAcoustIdClientId();
+			if (clientId) {
+				const results = await getAcoustIdResults(identity.value, clientId);
+				if (results?.length) {
+					const candidates = this.filterAcoustIDResults(results);
+					if (candidates.length) {
+						const identities = this.retrieveFromAcoustId(candidates);
+						if (identities?.length) {
+							return identities;
+						}
 					}
 				}
 			}
