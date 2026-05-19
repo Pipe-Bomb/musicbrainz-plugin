@@ -36,6 +36,17 @@ export class MusicBrainzExternalUrlSource implements ExternalUrlSource {
 	}
 
 	getTrackUrls(helper: TrackExternalUrlHelper): ExternalUrl[] | null {
+		const recordingId = helper.getIdentity("musicbrainz_recording_id");
+		if (recordingId) {
+			return [
+				{
+					iconId: "musicbrainz_logo",
+					name: "MusicBrainz Recording",
+					url: `https://musicbrainz.org/recording/${recordingId.value}`,
+				},
+			];
+		}
+
 		return null;
 	}
 }
