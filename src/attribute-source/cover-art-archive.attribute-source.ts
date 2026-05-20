@@ -102,7 +102,7 @@ export class CoverArtArchiveAttributeSource implements AttributeSource {
 				key,
 				value: {
 					extension: path.extname(image.image).substring(1),
-					data: response.data,
+					buffer: response.data,
 				},
 			};
 		}
