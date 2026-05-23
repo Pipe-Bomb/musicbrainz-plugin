@@ -32,7 +32,7 @@ export class RecordingTrackIdentifier extends BaseMetadataIdentifier {
 		const isrcIdentity = await helper.getIdentity("isrc");
 		if (isrcIdentity) {
 			const response = await requestMusicBrainz<MusicBrainzISRC>(
-				`/isrc/${isrcIdentity.value}`,
+				`/isrc/${isrcIdentity.identity}`,
 				logger,
 				["releases"],
 			);

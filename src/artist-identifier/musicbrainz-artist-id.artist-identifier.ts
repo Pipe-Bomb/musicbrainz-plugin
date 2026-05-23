@@ -51,7 +51,7 @@ export class MusicBrainzArtistIdArtistIdentifier implements ArtistIdentifier {
 				for (const identity of identities) {
 					urls.push({
 						identity,
-						url: toUrl(identity.value),
+						url: toUrl(identity.identity),
 					});
 				}
 			}

@@ -45,7 +45,7 @@ export abstract class BaseMetadataIdentifier implements TrackIdentifier {
 		if (identity) {
 			const clientId = await this.config.getAcoustIdClientId();
 			if (clientId) {
-				const results = await getAcoustIdResults(identity.value, clientId);
+				const results = await getAcoustIdResults(identity.identity, clientId);
 				if (results?.length) {
 					const candidates = this.filterAcoustIDResults(results);
 					if (candidates.length) {

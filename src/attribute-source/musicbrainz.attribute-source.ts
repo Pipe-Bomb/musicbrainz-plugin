@@ -1,24 +1,23 @@
 import {
-	AlbumAttributes,
 	AlbumInformationHelper,
-	ArtistAttributes,
+	AlbumMetadata,
 	ArtistInformationHelper,
+	ArtistMetadata,
 	AttributeSource,
 	AttributeSourceApiContext,
 	AttributeValue,
+	IdentifiableArtistMetadata,
+	IdentifiableTrackArtistMetadata,
 	Logger,
-	TrackAttributes,
 	TrackInformationHelper,
+	TrackMetadata,
 } from "@sdk";
-import { USER_AGENT } from "../constants.js";
-import Axios, { AxiosError, RawAxiosRequestHeaders } from "axios";
+import Axios, { AxiosError } from "axios";
 import {
 	MusicBrainzArtist,
 	MusicBrainzRecordingResponse,
 	MusicBrainzReleaseGroup,
 } from "../type/musicbrainz.js";
-import { CoverArtArchiveResponse } from "../type/cover-art-archive.js";
-import path from "path";
 import { requestMusicBrainz } from "../util/musicbrainz.util.js";
 
 export class MusicBrainzAttributeSource implements AttributeSource {
@@ -97,20 +96,20 @@ export class MusicBrainzAttributeSource implements AttributeSource {
 
 	async getTrackAttributeValues(
 		helper: TrackInformationHelper,
-	): Promise<TrackAttributes> {
+	): Promise<TrackMetadata> {
 		const recordingIdentity = await helper.getIdentity(
 			"musicbrainz_recording_id",
 		);
 		if (!recordingIdentity) {
 			return {
-				track: null,
+				attributes: null,
 				artists: null,
 			};
 		}
 
 		try {
 			const data = await requestMusicBrainz<MusicBrainzRecordingResponse>(
-				`/recording/${recordingIdentity.value}`,
+				`/recording/${recordingIdentity.identity}`,
 				this.logger,
 				["artist-credits", "genres", "ratings"],
 			);
@@ -143,15 +142,15 @@ export class MusicBrainzAttributeSource implements AttributeSource {
 				);
 			}
 
-			const artists: ArtistAttributes[] = [];
+			const artists: IdentifiableTrackArtistMetadata[] = [];
 			if (data["artist-credit"]) {
 				for (const credit of data["artist-credit"]) {
 					const artist = credit.artist;
 
 					if (artist?.id) {
 						artists.push({
-							identifierId: "musicbrainz_artist_id",
-							identifierValue: artist.id,
+							identityId: "musicbrainz_artist_id",
+							identity: artist.id,
 							joinPhrase: credit.joinphrase ?? null,
 							attributes: [{ key: "name", value: artist.name }],
 							pluginId: recordingIdentity.pluginId,
@@ -161,13 +160,13 @@ export class MusicBrainzAttributeSource implements AttributeSource {
 			}
 
 			return {
-				track: trackAttributes,
+				attributes: trackAttributes,
 				artists,
 			};
 		} catch (e) {
 			if (e instanceof AxiosError) {
 				this.logger.error(
-					`Failed to retrieve recording information from MusicBrainz for Recording "${recordingIdentity.value}":`,
+					`Failed to retrieve recording information from MusicBrainz for Recording "${recordingIdentity.identity}":`,
 					{
 						name: e.name,
 						message: e.message,
@@ -183,14 +182,14 @@ export class MusicBrainzAttributeSource implements AttributeSource {
 
 	async getArtistAttributeValues(
 		helper: ArtistInformationHelper,
-	): Promise<AttributeValue[]> {
+	): Promise<ArtistMetadata> {
 		const artistIdentity = await helper.getIdentity("musicbrainz_artist_id");
 
 		const attributes: AttributeValue[] = [];
 
 		if (artistIdentity) {
 			const data = await requestMusicBrainz<MusicBrainzArtist>(
-				`/artist/${artistIdentity.value}`,
+				`/artist/${artistIdentity.identity}`,
 				this.logger,
 				[
 					"aliases",
@@ -243,25 +242,25 @@ export class MusicBrainzAttributeSource implements AttributeSource {
 			}
 		}
 
-		return attributes;
+		return { attributes };
 	}
 
 	async getAlbumAttributeValues(
 		helper: AlbumInformationHelper,
-	): Promise<AlbumAttributes> {
+	): Promise<AlbumMetadata> {
 		const releaseGroupId = await helper.getIdentity(
 			"musicbrainz_release_group_id",
 		);
 
 		if (!releaseGroupId) {
 			return {
-				album: null,
+				attributes: null,
 				artists: null,
 			};
 		}
 
 		const releaseGroup = await requestMusicBrainz<MusicBrainzReleaseGroup>(
-			`/release-group/${releaseGroupId.value}`,
+			`/release-group/${releaseGroupId.identity}`,
 			this.logger,
 			["artist-credits", "annotation", "tags", "genres"],
 		);
@@ -273,15 +272,15 @@ export class MusicBrainzAttributeSource implements AttributeSource {
 			},
 		];
 
-		const artists: ArtistAttributes[] = [];
+		const artists: IdentifiableTrackArtistMetadata[] = [];
 		if (releaseGroup["artist-credit"]) {
 			for (const credit of releaseGroup["artist-credit"]) {
 				const artist = credit.artist;
 
 				if (artist?.id) {
 					artists.push({
-						identifierId: "musicbrainz_artist_id",
-						identifierValue: artist.id,
+						identityId: "musicbrainz_artist_id",
+						identity: artist.id,
 						joinPhrase: credit.joinphrase ?? null,
 						attributes: [{ key: "name", value: artist.name }],
 						pluginId: releaseGroupId.pluginId,
@@ -291,7 +290,7 @@ export class MusicBrainzAttributeSource implements AttributeSource {
 		}
 
 		return {
-			album: attributes,
+			attributes,
 			artists,
 		};
 	}

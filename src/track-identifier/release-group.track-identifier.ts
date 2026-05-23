@@ -28,7 +28,7 @@ export class ReleaseGroupTrackIdentifier extends BaseMetadataIdentifier {
 		);
 		if (recordingIdentity) {
 			const recording = await requestMusicBrainz<MusicBrainzRecording>(
-				`/recording/${recordingIdentity.value}`,
+				`/recording/${recordingIdentity.identity}`,
 				logger,
 				["releases", "release-groups"],
 			);

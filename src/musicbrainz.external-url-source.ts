@@ -14,7 +14,7 @@ export class MusicBrainzExternalUrlSource implements ExternalUrlSource {
 				{
 					iconId: "musicbrainz_logo",
 					name: "MusicBrainz Release Group",
-					url: `https://musicbrainz.org/release-group/${releaseGroupId.value}`,
+					url: `https://musicbrainz.org/release-group/${releaseGroupId.identity}`,
 				},
 			];
 		}
@@ -28,7 +28,7 @@ export class MusicBrainzExternalUrlSource implements ExternalUrlSource {
 				{
 					iconId: "musicbrainz_logo",
 					name: "MusicBrainz Artist",
-					url: `https://musicbrainz.org/artist/${artistId.value}`,
+					url: `https://musicbrainz.org/artist/${artistId.identity}`,
 				},
 			];
 		}
@@ -42,7 +42,7 @@ export class MusicBrainzExternalUrlSource implements ExternalUrlSource {
 				{
 					iconId: "musicbrainz_logo",
 					name: "MusicBrainz Recording",
-					url: `https://musicbrainz.org/recording/${recordingId.value}`,
+					url: `https://musicbrainz.org/recording/${recordingId.identity}`,
 				},
 			];
 		}

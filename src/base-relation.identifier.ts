@@ -26,7 +26,7 @@ export abstract class BaseRelationIdentifier implements ArtistIdentifier {
 		}
 
 		const artist = await requestMusicBrainz<MusicBrainzArtist>(
-			`/artist/${identity.value}`,
+			`/artist/${identity.identity}`,
 			logger,
 			["url-rels"],
 		);

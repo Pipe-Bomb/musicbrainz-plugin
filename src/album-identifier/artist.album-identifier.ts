@@ -24,7 +24,7 @@ export class MusicBrainzArtistAlbumIdentifier implements AlbumIdentifier {
 		}
 
 		const releaseGroup = await requestMusicBrainz<MusicBrainzReleaseGroup>(
-			`/release-group/${releaseGroupIdentifier.value}`,
+			`/release-group/${releaseGroupIdentifier.identity}`,
 			logger,
 			["artist-credits", "annotation", "tags", "genres"],
 		);

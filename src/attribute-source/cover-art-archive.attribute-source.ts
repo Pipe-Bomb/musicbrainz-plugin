@@ -1,13 +1,14 @@
 import {
-	AlbumAttributes,
 	AlbumInformationHelper,
+	AlbumMetadata,
 	ArtistInformationHelper,
+	ArtistMetadata,
 	AttributeSource,
 	AttributeSourceApiContext,
 	AttributeValue,
 	Logger,
-	TrackAttributes,
 	TrackInformationHelper,
+	TrackMetadata,
 } from "@sdk";
 import Axios, { AxiosError } from "axios";
 import {
@@ -112,7 +113,7 @@ export class CoverArtArchiveAttributeSource implements AttributeSource {
 
 	async getTrackAttributeValues(
 		helper: TrackInformationHelper,
-	): Promise<TrackAttributes> {
+	): Promise<TrackMetadata> {
 		const releaseGroupIdentity = await helper.getIdentity(
 			"musicbrainz_release_group_id",
 		);
@@ -122,7 +123,7 @@ export class CoverArtArchiveAttributeSource implements AttributeSource {
 			try {
 				const { images } = await this.requestCoverArt(
 					"release-group",
-					releaseGroupIdentity.value,
+					releaseGroupIdentity.identity,
 				);
 
 				trackAttributePromises.push(
@@ -135,7 +136,7 @@ export class CoverArtArchiveAttributeSource implements AttributeSource {
 				if (e instanceof AxiosError && e.response?.status == 404) {
 					return {
 						artists: null,
-						track: null,
+						attributes: null,
 					};
 				}
 				throw e;
@@ -145,7 +146,7 @@ export class CoverArtArchiveAttributeSource implements AttributeSource {
 		const trackAttributes = await Promise.allSettled(trackAttributePromises);
 
 		return {
-			track: trackAttributes
+			attributes: trackAttributes
 				.filter((attribute) => attribute.status == "fulfilled")
 				.map((attribute) => attribute.value)
 				.filter((value) => !!value),
@@ -154,14 +155,16 @@ export class CoverArtArchiveAttributeSource implements AttributeSource {
 	}
 
 	async getArtistAttributeValues(
-		helper: ArtistInformationHelper,
-	): Promise<AttributeValue[]> {
-		return [];
+		_helper: ArtistInformationHelper,
+	): Promise<ArtistMetadata> {
+		return {
+			attributes: null,
+		};
 	}
 
 	async getAlbumAttributeValues(
 		helper: AlbumInformationHelper,
-	): Promise<AlbumAttributes> {
+	): Promise<AlbumMetadata> {
 		const releaseGroupIdentity = await helper.getIdentity(
 			"musicbrainz_release_group_id",
 		);
@@ -172,7 +175,7 @@ export class CoverArtArchiveAttributeSource implements AttributeSource {
 			try {
 				const { images } = await this.requestCoverArt(
 					"release-group",
-					releaseGroupIdentity.value,
+					releaseGroupIdentity.identity,
 				);
 
 				albumAttributePromises.push(
@@ -184,7 +187,7 @@ export class CoverArtArchiveAttributeSource implements AttributeSource {
 			} catch (e) {
 				if (e instanceof AxiosError && e.response?.status == 404) {
 					return {
-						album: null,
+						attributes: null,
 						artists: null,
 					};
 				}
@@ -195,7 +198,7 @@ export class CoverArtArchiveAttributeSource implements AttributeSource {
 		const albumAttributes = await Promise.allSettled(albumAttributePromises);
 
 		return {
-			album: albumAttributes
+			attributes: albumAttributes
 				.filter((attribute) => attribute.status == "fulfilled")
 				.map((attribute) => attribute.value)
 				.filter((value) => !!value),
