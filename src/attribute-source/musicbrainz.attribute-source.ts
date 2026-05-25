@@ -60,6 +60,17 @@ export class MusicBrainzAttributeSource implements AttributeSource {
 				key: "rating",
 				type: "decimal",
 				supportsMultiple: false,
+				formatter: (value) => {
+					const stars = Math.max(Math.min(Math.round(value), 5), 0);
+					let output = "";
+					for (let i = 0; i < stars; i++) {
+						output += "★";
+					}
+					for (let i = stars; i < 5; i++) {
+						output += "☆";
+					}
+					return output;
+				},
 			},
 			{
 				key: "genre",
