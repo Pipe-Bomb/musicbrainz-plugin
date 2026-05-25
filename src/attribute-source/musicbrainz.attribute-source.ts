@@ -44,6 +44,17 @@ export class MusicBrainzAttributeSource implements AttributeSource {
 				key: "duration",
 				type: "decimal",
 				supportsMultiple: false,
+				formatter: (value) => {
+					let seconds = Math.floor(value);
+					let minutes = Math.floor(seconds / 60);
+					seconds -= minutes * 60;
+					let hours = Math.floor(minutes / 60);
+					minutes -= hours * 60;
+					if (hours) {
+						return `${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+					}
+					return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+				},
 			},
 			{
 				key: "rating",
