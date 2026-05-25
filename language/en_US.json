@@ -1,3 +1,10 @@
 {
-	"plugin.musicbrainz.name": "MusicBrainz"
+	"plugin.musicbrainz.name": "MusicBrainz",
+
+	"plugin.musicbrainz.attribute.track.cover-art-archive.back.name": "Back Art",
+	"plugin.musicbrainz.attribute.track.cover-art-archive.front.name": "Cover Art",
+	"plugin.musicbrainz.attribute.track.musicbrainz.duration.name": "Duration",
+	"plugin.musicbrainz.attribute.track.musicbrainz.genre.name": "Genre",
+	"plugin.musicbrainz.attribute.track.musicbrainz.rating.name": "Rating",
+	"plugin.musicbrainz.attribute.track.musicbrainz.title.name": "Title"
 }
