@@ -5,7 +5,6 @@ import { AcoustIDTrackIdentifier } from "./track-identifier/acoustid.track-ident
 import { ArtistTrackIdentifier } from "./track-identifier/artist.track-identifier.ts.js";
 import { RecordingTrackIdentifier } from "./track-identifier/recording.track-identifier.js";
 import { ReleaseGroupTrackIdentifier } from "./track-identifier/release-group.track-identifier.js";
-import { ReleaseTrackIdentifier } from "./track-identifier/release.track-identifier.js";
 import { SpotifyArtistIdentifier } from "./artist-identifier/spotify.artist-identifier.js";
 import { DiscogsArtistIdentifier } from "./artist-identifier/discogs.artist-identifier.js";
 import { SoundCloudArtistPermalinkIdentifier } from "./artist-identifier/soundcloud-artist-permalink.artist-identifier.js";
@@ -13,6 +12,8 @@ import { MusicBrainzExternalUrlSource } from "./musicbrainz.external-url-source.
 import { MusicBrainzArtistIdArtistIdentifier } from "./artist-identifier/musicbrainz-artist-id.artist-identifier.js";
 import { MusicBrainzArtistAlbumIdentifier } from "./album-identifier/artist.album-identifier.js";
 import { MusicBrainzConfigManager } from "./musicbrainz.config-manager.js";
+import { YoutubeMusicHandleArtistIdentifier } from "./artist-identifier/youtube-music-handle.artist-identifier.js";
+import { YoutubeMusicChannelIdArtistIdentifier } from "./artist-identifier/youtube-music-channel-id.artist-identifier.js";
 
 export default class Plugin implements PipeBomb.Plugin {
 	private api!: PipeBomb.PluginApiContext;
@@ -41,6 +42,10 @@ export default class Plugin implements PipeBomb.Plugin {
 		);
 		this.api.registerArtistIdentifier(
 			new MusicBrainzArtistIdArtistIdentifier(),
+		);
+		this.api.registerArtistIdentifier(new YoutubeMusicHandleArtistIdentifier());
+		this.api.registerArtistIdentifier(
+			new YoutubeMusicChannelIdArtistIdentifier(),
 		);
 
 		this.api.registerAlbumIdentifier(new MusicBrainzArtistAlbumIdentifier());
