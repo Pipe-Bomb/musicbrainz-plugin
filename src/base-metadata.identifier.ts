@@ -50,8 +50,11 @@ export abstract class BaseMetadataIdentifier implements TrackIdentifier {
 					const candidates = this.filterAcoustIDResults(results);
 					if (candidates.length) {
 						const identities = this.retrieveFromAcoustId(candidates);
-						if (identities?.length) {
-							return identities;
+						if (identities) {
+							const valid = identities.filter((id) => !!id.trim());
+							if (valid.length) {
+								return valid;
+							}
 						}
 					}
 				}
@@ -66,8 +69,11 @@ export abstract class BaseMetadataIdentifier implements TrackIdentifier {
 		_logger: Logger,
 	): Promise<string[] | null> {
 		const metadataIds = await this.checkMetadata(helper);
-		if (metadataIds?.length) {
-			return metadataIds;
+		if (metadataIds) {
+			const valid = metadataIds.filter((id) => !!id.trim());
+			if (valid.length) {
+				return valid;
+			}
 		}
 
 		return this.checkChromaprint(helper);
