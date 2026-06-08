@@ -44,7 +44,7 @@ If you don't have an AcoustID client ID, the plugin will only be able to use Mus
 | :---------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------- |
 | `discogs_artist_id`           | `musicbrainz_artist_id` (hard)                                   | The Discogs artist ID associated with the MB artist profile.           |
 | `musicbrainz_artist_id`       | `soundcloud_artist_permalink` (soft), `spotify_artist_id` (soft) | The MB artist ID associated with a third party profile.                |
-| `soundcloud_artist_permalink` | `musicbrainz_artist_id` (hard)                                   | The SoundCLoud artist permalink associated with the MB artist profile. |
+| `soundcloud_artist_permalink` | `musicbrainz_artist_id` (hard)                                   | The SoundCloud artist permalink associated with the MB artist profile. |
 | `spotify_artist_id`           | `musicbrainz_artist_id` (hard)                                   | The Spotify artist ID associated with the MB artist profile.           |
 | `youtube_music_channel_id`    | `musicbrainz_artist_id` (hard)                                   | The YouTube Music channel ID associated with the MB artist profile.    |
 | `youtube_music_handle`        | `musicbrainz_artist_id` (hard)                                   | The YouTube Music handle associated with the MB artist profile.        |
