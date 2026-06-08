@@ -49,10 +49,13 @@ export class MusicBrainzArtistIdArtistIdentifier implements ArtistIdentifier {
 		) => {
 			if (identities) {
 				for (const identity of identities) {
-					urls.push({
-						identity,
-						url: toUrl(identity.identity),
-					});
+					// don't use third party identities created by self otherwise a circular dependency means identities will never be invalidated
+					if (identity.pluginId != "musicbrainz") {
+						urls.push({
+							identity,
+							url: toUrl(identity.identity),
+						});
+					}
 				}
 			}
 		};

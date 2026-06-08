@@ -1,14 +1,7 @@
 import { ICommonTagsResult } from "music-metadata";
 import { BaseMetadataIdentifier } from "../base-metadata.identifier.js";
 import { AcoustIdResult } from "../type/acoustid.js";
-import {
-	IdentifierDependency,
-	Logger,
-	TrackIdentifierTarget,
-	TrackInformationHelper,
-} from "@sdk";
-import { requestMusicBrainz } from "../util/musicbrainz.util.js";
-import { MusicBrainzRecording } from "../type/musicbrainz.js";
+import { IdentifierDependency, TrackIdentifierTarget } from "@sdk";
 
 export class ReleaseTrackIdentifier extends BaseMetadataIdentifier {
 	public id = "musicbrainz_release_id";

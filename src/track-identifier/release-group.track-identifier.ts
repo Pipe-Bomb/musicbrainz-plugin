@@ -1,7 +1,12 @@
 import { ICommonTagsResult } from "music-metadata";
 import { BaseMetadataIdentifier } from "../base-metadata.identifier.js";
 import { AcoustIdResult } from "../type/acoustid.js";
-import { Logger, TrackIdentifierTarget, TrackInformationHelper } from "@sdk";
+import {
+	IdentifierDependency,
+	Logger,
+	TrackIdentifierTarget,
+	TrackInformationHelper,
+} from "@sdk";
 import { requestMusicBrainz } from "../util/musicbrainz.util.js";
 import {
 	MusicBrainzRecording,
@@ -107,5 +112,15 @@ export class ReleaseGroupTrackIdentifier extends BaseMetadataIdentifier {
 		}
 
 		return null;
+	}
+
+	getSoftDependencies(): IdentifierDependency[] {
+		return [
+			...super.getSoftDependencies(),
+			{
+				pluginId: null,
+				sourceId: "musicbrainz_recording_id",
+			},
+		];
 	}
 }

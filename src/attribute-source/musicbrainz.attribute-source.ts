@@ -6,13 +6,12 @@ import {
 	AttributeSource,
 	AttributeSourceApiContext,
 	AttributeValue,
-	IdentifiableArtistMetadata,
 	IdentifiableTrackArtistMetadata,
 	Logger,
 	TrackInformationHelper,
 	TrackMetadata,
 } from "@sdk";
-import Axios, { AxiosError } from "axios";
+import { AxiosError } from "axios";
 import {
 	MusicBrainzArtist,
 	MusicBrainzRecordingResponse,

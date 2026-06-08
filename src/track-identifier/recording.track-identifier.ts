@@ -7,10 +7,7 @@ import {
 	TrackIdentifierTarget,
 	TrackInformationHelper,
 } from "@sdk";
-import {
-	MusicBrainzISRC,
-	MusicBrainzRecordingQueryResponse,
-} from "../type/musicbrainz.js";
+import { MusicBrainzISRC } from "../type/musicbrainz.js";
 import { requestMusicBrainz } from "../util/musicbrainz.util.js";
 
 export class RecordingTrackIdentifier extends BaseMetadataIdentifier {

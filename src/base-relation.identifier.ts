@@ -1,6 +1,5 @@
 import {
 	IdentifierDependency,
-	TrackIdentifierTarget,
 	Logger,
 	ArtistIdentifier,
 	ArtistInformationHelper,
