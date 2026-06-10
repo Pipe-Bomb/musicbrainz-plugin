@@ -16,7 +16,7 @@ npm run build
 
 ## Usage
 
-In order to convert Chromaprint fingerprints to MusicBrainz IDs, you need to specify an AcoustID client ID. You can get one for free using the [AcoustID website](https://acoustid.org/api-key).
+In order to convert Chromaprint fingerprints to MusicBrainz IDs, you need to specify an AcoustID client ID. You can get one for free using the [AcoustID website](https://acoustid.org/my-applications).
 
 If you don't have an AcoustID client ID, the plugin will only be able to use MusicBrainz IDs that it locates in audio tags. However using Chromaprint is recommended as a backup because audio tags are often stripped from files that have been transcoded.
 
