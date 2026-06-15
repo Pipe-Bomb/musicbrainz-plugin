@@ -12,8 +12,8 @@ import { MusicBrainzExternalUrlSource } from "./musicbrainz.external-url-source.
 import { MusicBrainzArtistIdArtistIdentifier } from "./artist-identifier/musicbrainz-artist-id.artist-identifier.js";
 import { MusicBrainzArtistAlbumIdentifier } from "./album-identifier/artist.album-identifier.js";
 import { MusicBrainzConfigManager } from "./musicbrainz.config-manager.js";
-import { YoutubeMusicHandleArtistIdentifier } from "./artist-identifier/youtube-music-handle.artist-identifier.js";
-import { YoutubeMusicChannelIdArtistIdentifier } from "./artist-identifier/youtube-music-channel-id.artist-identifier.js";
+import { YoutubeHandleArtistIdentifier } from "./artist-identifier/youtube-handle.artist-identifier.js";
+import { YoutubeChannelIdArtistIdentifier } from "./artist-identifier/youtube-channel-id.artist-identifier.js";
 
 export default class Plugin implements PipeBomb.Plugin {
 	private api!: PipeBomb.PluginApiContext;
@@ -43,10 +43,8 @@ export default class Plugin implements PipeBomb.Plugin {
 		this.api.registerArtistIdentifier(
 			new MusicBrainzArtistIdArtistIdentifier(),
 		);
-		this.api.registerArtistIdentifier(new YoutubeMusicHandleArtistIdentifier());
-		this.api.registerArtistIdentifier(
-			new YoutubeMusicChannelIdArtistIdentifier(),
-		);
+		this.api.registerArtistIdentifier(new YoutubeHandleArtistIdentifier());
+		this.api.registerArtistIdentifier(new YoutubeChannelIdArtistIdentifier());
 
 		this.api.registerAlbumIdentifier(new MusicBrainzArtistAlbumIdentifier());
 

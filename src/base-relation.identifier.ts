@@ -12,7 +12,7 @@ export abstract class BaseRelationIdentifier implements ArtistIdentifier {
 
 	protected abstract findServiceId(
 		relations: MusicBrainzRelation[],
-	): string | null;
+	): string[] | null;
 
 	async identify(
 		helper: ArtistInformationHelper,
@@ -33,9 +33,9 @@ export abstract class BaseRelationIdentifier implements ArtistIdentifier {
 		// logger.debug(artist);
 
 		if (artist.relations?.length) {
-			const serviceId = this.findServiceId(artist.relations);
-			if (serviceId) {
-				return [serviceId];
+			const serviceIds = this.findServiceId(artist.relations);
+			if (serviceIds) {
+				return serviceIds;
 			}
 		}
 
