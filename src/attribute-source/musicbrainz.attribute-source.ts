@@ -18,6 +18,7 @@ import {
 	MusicBrainzReleaseGroup,
 } from "../type/musicbrainz.js";
 import { requestMusicBrainz } from "../util/musicbrainz.util.js";
+import { VARIOUS_ARTISTS_UUID } from "../constants.js";
 
 export class MusicBrainzAttributeSource implements AttributeSource {
 	private api!: AttributeSourceApiContext;
@@ -76,6 +77,11 @@ export class MusicBrainzAttributeSource implements AttributeSource {
 				type: "string",
 				supportsMultiple: true,
 			},
+			{
+				key: "artist",
+				type: "string",
+				supportsMultiple: true,
+			},
 		]);
 
 		this.api.registerArtistAttributes([
@@ -116,6 +122,11 @@ export class MusicBrainzAttributeSource implements AttributeSource {
 				key: "year",
 				type: "integer",
 				supportsMultiple: false,
+			},
+			{
+				key: "artist",
+				type: "string",
+				supportsMultiple: true,
 			},
 		]);
 	}
@@ -168,19 +179,30 @@ export class MusicBrainzAttributeSource implements AttributeSource {
 				);
 			}
 
+			let isVariousArtists = false;
 			const artists: IdentifiableTrackArtistMetadata[] = [];
 			if (data["artist-credit"]) {
 				for (const credit of data["artist-credit"]) {
 					const artist = credit.artist;
 
 					if (artist?.id) {
-						artists.push({
-							identityId: "musicbrainz_artist_id",
-							identity: artist.id,
-							joinPhrase: credit.joinphrase ?? null,
-							attributes: [{ key: "name", value: artist.name }],
-							pluginId: recordingIdentity.pluginId,
-						});
+						if (artist.id == VARIOUS_ARTISTS_UUID) {
+							if (!isVariousArtists) {
+								isVariousArtists = true;
+								trackAttributes.push({
+									key: "artist",
+									value: "Various Artists",
+								});
+							}
+						} else {
+							artists.push({
+								identityId: "musicbrainz_artist_id",
+								identity: artist.id,
+								joinPhrase: credit.joinphrase ?? null,
+								attributes: [{ key: "name", value: artist.name }],
+								pluginId: recordingIdentity.pluginId,
+							});
+						}
 					}
 				}
 			}
@@ -305,19 +327,30 @@ export class MusicBrainzAttributeSource implements AttributeSource {
 			});
 		}
 
+		let isVariousArtists = false;
 		const artists: IdentifiableTrackArtistMetadata[] = [];
 		if (releaseGroup["artist-credit"]) {
 			for (const credit of releaseGroup["artist-credit"]) {
 				const artist = credit.artist;
 
 				if (artist?.id) {
-					artists.push({
-						identityId: "musicbrainz_artist_id",
-						identity: artist.id,
-						joinPhrase: credit.joinphrase ?? null,
-						attributes: [{ key: "name", value: artist.name }],
-						pluginId: releaseGroupId.pluginId,
-					});
+					if (artist.id == VARIOUS_ARTISTS_UUID) {
+						if (!isVariousArtists) {
+							isVariousArtists = true;
+							attributes.push({
+								key: "artist",
+								value: "Various Artists",
+							});
+						}
+					} else {
+						artists.push({
+							identityId: "musicbrainz_artist_id",
+							identity: artist.id,
+							joinPhrase: credit.joinphrase ?? null,
+							attributes: [{ key: "name", value: artist.name }],
+							pluginId: releaseGroupId.pluginId,
+						});
+					}
 				}
 			}
 		}

@@ -7,6 +7,7 @@ import {
 } from "@sdk";
 import { requestMusicBrainz } from "../util/musicbrainz.util.js";
 import { MusicBrainzReleaseGroup } from "../type/musicbrainz.js";
+import { VARIOUS_ARTISTS_UUID } from "../constants.js";
 
 export class MusicBrainzArtistAlbumIdentifier implements AlbumIdentifier {
 	public target: AlbumIdentifierTarget = "artist";
@@ -33,10 +34,7 @@ export class MusicBrainzArtistAlbumIdentifier implements AlbumIdentifier {
 
 		if (releaseGroup["artist-credit"]) {
 			for (const credit of releaseGroup["artist-credit"]) {
-				if (
-					credit.artist?.id &&
-					credit.artist.id != "89ad4ac3-39f7-470e-963a-56509c546377" // ignore "Various Artists"
-				) {
+				if (credit.artist?.id && credit.artist.id != VARIOUS_ARTISTS_UUID) {
 					artists.push(credit.artist.id);
 				}
 			}
