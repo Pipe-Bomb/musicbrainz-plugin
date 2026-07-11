@@ -16,7 +16,7 @@ const MATCH_THRESHOLD = 0.9;
 export abstract class BaseMetadataIdentifier implements TrackIdentifier {
 	abstract readonly id: string;
 	abstract readonly target: TrackIdentifierTarget;
-	protected abstract tag: keyof ICommonTagsResult;
+	protected abstract tag: keyof ICommonTagsResult | null;
 	protected abstract retrieveFromAcoustId(
 		results: AcoustIdResult[],
 	): string[] | null;
@@ -26,7 +26,11 @@ export abstract class BaseMetadataIdentifier implements TrackIdentifier {
 	protected async checkMetadata(helper: TrackInformationHelper) {
 		const metadata = await getTrackMetadata(helper);
 		if (metadata) {
-			if (this.tag in metadata.common) {
+			if (
+				this.tag &&
+				!this.config.isTagIgnored(this.tag) &&
+				this.tag in metadata.common
+			) {
 				const value = metadata.common[this.tag];
 				if (typeof value == "string") {
 					return [value];

@@ -112,6 +112,11 @@ export class MusicBrainzAttributeSource implements AttributeSource {
 				type: "string",
 				supportsMultiple: false,
 			},
+			{
+				key: "year",
+				type: "integer",
+				supportsMultiple: false,
+			},
 		]);
 	}
 
@@ -292,6 +297,13 @@ export class MusicBrainzAttributeSource implements AttributeSource {
 				value: releaseGroup.title,
 			},
 		];
+
+		if (releaseGroup["first-release-date"]) {
+			attributes.push({
+				key: "year",
+				value: new Date(releaseGroup["first-release-date"]).getUTCFullYear(),
+			});
+		}
 
 		const artists: IdentifiableTrackArtistMetadata[] = [];
 		if (releaseGroup["artist-credit"]) {

@@ -4,9 +4,13 @@ export class MusicBrainzConfigManager implements ConfigManager {
 	private api!: ConfigManagerApiContext;
 
 	private acoustIdClientId: string | null = null;
+	private ignoredFileTags: string[] = [];
 
-	enable(configManagerApiContext: ConfigManagerApiContext): void {
+	async enable(configManagerApiContext: ConfigManagerApiContext) {
 		this.api = configManagerApiContext;
+
+		this.ignoredFileTags =
+			(await this.api.getValue("ignored_file_tags", "string", true)) ?? [];
 	}
 
 	async getAcoustIdClientId() {
@@ -15,6 +19,10 @@ export class MusicBrainzConfigManager implements ConfigManager {
 				(await this.api.getValue("acoustid_client_id", "string")) ?? "";
 		}
 		return this.acoustIdClientId;
+	}
+
+	isTagIgnored(fileTag: string) {
+		return this.ignoredFileTags.includes(fileTag);
 	}
 
 	async getConfigOptions(): Promise<ConfigNode> {
@@ -27,6 +35,13 @@ export class MusicBrainzConfigManager implements ConfigManager {
 					name: "AcoustID Client ID",
 					placeholder: "XXXXXXXXXX",
 					value: (await this.getAcoustIdClientId()) ?? "",
+				},
+				{
+					type: "text",
+					id: "ignored_file_tags",
+					name: "Ignored file tags",
+					placeholder: "musicbrainz_artistid,musicbrainz_releasegroupid",
+					value: this.ignoredFileTags.join(","),
 				},
 			],
 		};
@@ -49,6 +64,25 @@ export class MusicBrainzConfigManager implements ConfigManager {
 			}
 			this.acoustIdClientId = acoustIdClientId;
 		}
+
+		const ignoredTagsString = values["ignored_file_tags"];
+		if (
+			typeof ignoredTagsString == "string" &&
+			this.ignoredFileTags.join(",") != ignoredTagsString
+		) {
+			const tags = ignoredTagsString
+				.split(",")
+				.map((tag) => tag.trim())
+				.filter(Boolean);
+			if (tags.length) {
+				this.ignoredFileTags = tags;
+				await this.api.setValue("ignored_file_tags", "string", tags);
+			} else {
+				this.ignoredFileTags = [];
+				await this.api.delete("ignored_file_tags");
+			}
+		}
+
 		return this.getConfigOptions();
 	}
 }
