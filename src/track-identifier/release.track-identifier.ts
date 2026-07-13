@@ -19,7 +19,7 @@ export class ReleaseTrackIdentifier extends BaseIsrcMetadataIdentifier {
 	public id = "musicbrainz_release_id";
 	public readonly target: TrackIdentifierTarget = "track";
 
-	protected tag: keyof ICommonTagsResult = "musicbrainz_albumid";
+	protected tags: (keyof ICommonTagsResult)[] = ["musicbrainz_albumid"];
 
 	protected override async checkAlternativeIdentities(
 		helper: TrackInformationHelper,

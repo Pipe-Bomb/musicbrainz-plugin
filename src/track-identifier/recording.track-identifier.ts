@@ -9,7 +9,10 @@ export class RecordingTrackIdentifier extends BaseIsrcMetadataIdentifier {
 	public id = "musicbrainz_recording_id";
 	public readonly target: TrackIdentifierTarget = "track";
 
-	protected tag: keyof ICommonTagsResult = "musicbrainz_recordingid";
+	protected tags: (keyof ICommonTagsResult)[] = [
+		"musicbrainz_recordingid",
+		"musicbrainz_trackid",
+	];
 
 	protected override async extractFromIsrc(
 		response: MusicBrainzISRC,
