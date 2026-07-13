@@ -1,7 +1,6 @@
 import type PipeBomb from "@sdk";
 import { CoverArtArchiveAttributeSource } from "./attribute-source/cover-art-archive.attribute-source.js";
 import { MusicBrainzAttributeSource } from "./attribute-source/musicbrainz.attribute-source.js";
-import { AcoustIDTrackIdentifier } from "./track-identifier/acoustid.track-identifier.js";
 import { ArtistTrackIdentifier } from "./track-identifier/artist.track-identifier.ts.js";
 import { RecordingTrackIdentifier } from "./track-identifier/recording.track-identifier.js";
 import { ReleaseGroupTrackIdentifier } from "./track-identifier/release-group.track-identifier.js";
@@ -29,11 +28,9 @@ export default class Plugin implements PipeBomb.Plugin {
 		const config = new MusicBrainzConfigManager();
 		this.api.registerConfigManager(config);
 
-		this.api.registerTrackIdentifier(new AcoustIDTrackIdentifier(config));
 		this.api.registerTrackIdentifier(new ArtistTrackIdentifier(config));
 		this.api.registerTrackIdentifier(new RecordingTrackIdentifier(config));
 		this.api.registerTrackIdentifier(new ReleaseGroupTrackIdentifier(config));
-		// this.api.registerTrackIdentifier(new ReleaseTrackIdentifier());
 
 		this.api.registerArtistIdentifier(new SpotifyArtistIdentifier());
 		this.api.registerArtistIdentifier(new DiscogsArtistIdentifier());

@@ -1,45 +1,130 @@
 import { ICommonTagsResult } from "music-metadata";
-import { BaseMetadataIdentifier } from "../base-metadata.identifier.js";
 import { AcoustIdResult } from "../type/acoustid.js";
-import { IdentifierDependency, TrackIdentifierTarget } from "@sdk";
+import {
+	IdentifierDependency,
+	Logger,
+	TrackIdentifierTarget,
+	TrackInformationHelper,
+} from "@sdk";
+import { BaseIsrcMetadataIdentifier } from "../base-isrc-metadata.identifier.js";
+import { requestMusicBrainz } from "../util/musicbrainz.util.js";
+import {
+	MusicBrainzISRC,
+	MusicBrainzRecording,
+	MusicBrainzRelease,
+} from "../type/musicbrainz.js";
+import { getBestAcoustIdRecording } from "../util/acoustid.util.js";
 
-export class ReleaseTrackIdentifier extends BaseMetadataIdentifier {
+export class ReleaseTrackIdentifier extends BaseIsrcMetadataIdentifier {
 	public id = "musicbrainz_release_id";
 	public readonly target: TrackIdentifierTarget = "track";
 
 	protected tag: keyof ICommonTagsResult = "musicbrainz_albumid";
 
-	// async identify(helper: TrackInformationHelper, logger: Logger): Promise<string[] | null> {
-	// 	const metadataIds = await this.checkMetadata(helper);
-	// 	if (metadataIds?.length) {
-	// 		return metadataIds;
-	// 	}
+	protected override async checkAlternativeIdentities(
+		helper: TrackInformationHelper,
+		logger: Logger,
+	): Promise<string[] | null> {
+		const recordingIdentity = await helper.getIdentity(
+			"musicbrainz_recording_id",
+		);
+		if (recordingIdentity?.identity) {
+			const recording = await requestMusicBrainz<MusicBrainzRecording>(
+				`/recording/${recordingIdentity.identity}`,
+				logger,
+				["releases"],
+			);
+			if (recording.releases?.length) {
+				const bestRelease = this.selectBestRelease(recording.releases);
+				if (bestRelease?.id) {
+					return [bestRelease.id];
+				}
+			}
+		}
 
-	// 	const recordingIdentity = await helper.getIdentity("musicbrainz_recording_id");
-	// 	if (recordingIdentity) {
-	// 		const recording = await requestMusicBrainz<MusicBrainzRecording>(`/recording/${recordingIdentity.value}`, logger, ["releases", "release-groups"]);
-	// 		if (recording.releases?.length) {
-	// 			recording.releases.map
-	// 		}
-	// 	}
+		return super.checkAlternativeIdentities(helper, logger);
+	}
 
-	// 	return this.checkChromaprint(helper);
-	// }
+	protected async extractFromIsrc(
+		response: MusicBrainzISRC,
+		logger: Logger,
+	): Promise<string[] | null> {
+		const primaryRecordingId = response.recordings?.[0]?.id;
+		if (!primaryRecordingId) {
+			return null;
+		}
 
-	protected retrieveFromAcoustId(results: AcoustIdResult[]): string[] | null {
+		const recording = await requestMusicBrainz<MusicBrainzRecording>(
+			`/recording/${primaryRecordingId}`,
+			logger,
+			["releases"],
+		);
+
+		if (recording.releases?.length) {
+			const bestRelease = this.selectBestRelease(recording.releases);
+			if (bestRelease?.id) {
+				return [bestRelease.id];
+			}
+		}
+
+		return null;
+	}
+
+	protected retrieveFromAcoustId(
+		results: AcoustIdResult[],
+		duration: number,
+	): string[] | null {
+		const recording = getBestAcoustIdRecording(results, duration);
+		if (!recording?.releasegroups?.length) {
+			return null;
+		}
+
 		const ids = new Set<string>();
-
-		for (const result of results) {
-			for (const recording of result.recordings ?? []) {
-				for (const group of recording.releasegroups ?? []) {
-					for (const release of group.releases ?? []) {
-						if (release.id) ids.add(release.id);
-					}
+		for (const group of recording.releasegroups) {
+			for (const release of group.releases ?? []) {
+				if (release.id) {
+					ids.add(release.id);
 				}
 			}
 		}
 
 		return Array.from(ids);
+	}
+
+	private selectBestRelease(
+		releases: MusicBrainzRelease[],
+	): MusicBrainzRelease | null {
+		if (!releases || releases.length === 0) return null;
+
+		const scored = releases.map((release) => {
+			let score = 0;
+
+			if (release.status === "Official") {
+				score += 100;
+			} else if (release.status === "Promotion") {
+				score += 50;
+			}
+
+			if (
+				release.media?.some(
+					(m) => m.format === "CD" || m.format === "Digital Media",
+				)
+			) {
+				score += 20;
+			}
+
+			return { score, date: release.date || "9999", release };
+		});
+
+		const winner = scored.sort((a, b) => {
+			if (b.score !== a.score) return b.score - a.score;
+			return a.date.localeCompare(b.date);
+		})[0];
+
+		if (winner) {
+			return winner.release;
+		}
+		return null;
 	}
 
 	getSoftDependencies(): IdentifierDependency[] {

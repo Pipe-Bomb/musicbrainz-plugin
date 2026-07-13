@@ -17,9 +17,18 @@ export abstract class BaseMetadataIdentifier implements TrackIdentifier {
 	abstract readonly id: string;
 	abstract readonly target: TrackIdentifierTarget;
 	protected abstract tag: keyof ICommonTagsResult | null;
+
 	protected abstract retrieveFromAcoustId(
 		results: AcoustIdResult[],
+		duration: number,
 	): string[] | null;
+
+	protected async checkAlternativeIdentities(
+		helper: TrackInformationHelper,
+		logger: Logger,
+	): Promise<string[] | null> {
+		return null;
+	}
 
 	constructor(private readonly config: MusicBrainzConfigManager) {}
 
@@ -49,15 +58,28 @@ export abstract class BaseMetadataIdentifier implements TrackIdentifier {
 		if (identity) {
 			const clientId = await this.config.getAcoustIdClientId();
 			if (clientId) {
-				const results = await getAcoustIdResults(identity.identity, clientId);
-				if (results?.length) {
-					const candidates = this.filterAcoustIDResults(results);
-					if (candidates.length) {
-						const identities = this.retrieveFromAcoustId(candidates);
-						if (identities) {
-							const valid = identities.filter((id) => !!id.trim());
-							if (valid.length) {
-								return valid;
+				const [durationString, fingerprint, ...extra] =
+					identity.identity.split(":");
+				const duration = Number(durationString);
+
+				if (!extra.length && fingerprint && Number.isFinite(duration)) {
+					const results = await getAcoustIdResults(
+						fingerprint,
+						duration,
+						clientId,
+					);
+					if (results.length) {
+						const candidates = this.filterAcoustIDResults(results);
+						if (candidates.length) {
+							const identities = this.retrieveFromAcoustId(
+								candidates,
+								duration,
+							);
+							if (identities) {
+								const valid = identities.filter((id) => !!id.trim());
+								if (valid.length) {
+									return valid;
+								}
 							}
 						}
 					}
@@ -70,11 +92,22 @@ export abstract class BaseMetadataIdentifier implements TrackIdentifier {
 
 	async identify(
 		helper: TrackInformationHelper,
-		_logger: Logger,
+		logger: Logger,
 	): Promise<string[] | null> {
 		const metadataIds = await this.checkMetadata(helper);
 		if (metadataIds) {
 			const valid = metadataIds.filter((id) => !!id.trim());
+			if (valid.length) {
+				return valid;
+			}
+		}
+
+		const alternativeIds = await this.checkAlternativeIdentities(
+			helper,
+			logger,
+		);
+		if (alternativeIds) {
+			const valid = alternativeIds.filter((id) => !!id.trim());
 			if (valid.length) {
 				return valid;
 			}
@@ -93,9 +126,7 @@ export abstract class BaseMetadataIdentifier implements TrackIdentifier {
 		}
 
 		const topScore = candidates[0]!.score;
-		const topTier = candidates.filter(
-			(c) => Math.abs(c.score - topScore) < 0.001,
-		);
+		const topTier = candidates.filter((c) => c.score === topScore);
 
 		const withMetadata = topTier.filter(
 			(c) => c.recordings && c.recordings.length > 0,
