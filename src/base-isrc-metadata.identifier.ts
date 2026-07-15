@@ -1,13 +1,6 @@
 import { TrackInformationHelper, Logger, IdentifierDependency } from "@sdk";
 import { BaseMetadataIdentifier } from "./base-metadata.identifier.js";
-import { Cache } from "./util/cache.js";
 import { MusicBrainzISRC } from "./type/musicbrainz.js";
-import { requestMusicBrainz } from "./util/musicbrainz.util.js";
-
-const isrcCache = new Cache<string, MusicBrainzISRC>({
-	maxEntries: 30,
-	timeout: 30_000,
-});
 
 export abstract class BaseIsrcMetadataIdentifier extends BaseMetadataIdentifier {
 	protected abstract extractFromIsrc(
@@ -24,26 +17,24 @@ export abstract class BaseIsrcMetadataIdentifier extends BaseMetadataIdentifier 
 			return null;
 		}
 
-		const cacheKey = isrcIdentity.identity.trim();
-		let response = isrcCache.get(cacheKey);
-
-		if (!response) {
-			response = await requestMusicBrainz<MusicBrainzISRC>(
-				`/isrc/${cacheKey}`,
-				logger,
-				["artists", "releases"],
-			);
+		try {
+			const response = await this.cache.getIsrc(isrcIdentity.identity);
 
 			if (response) {
-				isrcCache.set(cacheKey, response);
+				return this.extractFromIsrc(response, logger);
 			}
-		}
 
-		if (response) {
-			return this.extractFromIsrc(response, logger);
+			return null;
+		} catch (e) {
+			if (e instanceof Error) {
+				logger.error(
+					`Failed to get info for ISRC "${isrcIdentity.identity}": ${e.message}`,
+				);
+			} else {
+				logger.error(`Failed to get info for ISRC "${isrcIdentity.identity}"`);
+			}
+			return null;
 		}
-
-		return null;
 	}
 
 	override getSoftDependencies(): IdentifierDependency[] {

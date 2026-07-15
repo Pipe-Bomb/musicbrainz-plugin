@@ -6,10 +6,10 @@ import {
 	Logger,
 } from "@sdk";
 import { ICommonTagsResult } from "music-metadata";
-import { getAcoustIdResults } from "./util/acoustid.util.js";
 import { getTrackMetadata } from "./util/track.util.js";
 import { AcoustIdResult } from "./type/acoustid.js";
 import { MusicBrainzConfigManager } from "./musicbrainz.config-manager.js";
+import { MusicBrainzCache } from "./musicbrainz.cache.js";
 
 const MATCH_THRESHOLD = 0.9;
 
@@ -30,7 +30,10 @@ export abstract class BaseMetadataIdentifier implements TrackIdentifier {
 		return null;
 	}
 
-	constructor(private readonly config: MusicBrainzConfigManager) {}
+	constructor(
+		private readonly config: MusicBrainzConfigManager,
+		protected readonly cache: MusicBrainzCache,
+	) {}
 
 	protected async checkMetadata(helper: TrackInformationHelper) {
 		const metadata = await getTrackMetadata(helper);
@@ -66,11 +69,12 @@ export abstract class BaseMetadataIdentifier implements TrackIdentifier {
 				const duration = Number(durationString);
 
 				if (!extra.length && fingerprint && Number.isFinite(duration)) {
-					const results = await getAcoustIdResults(
+					const results = await this.cache.getAcoustIdResults(
 						fingerprint,
 						duration,
 						clientId,
 					);
+
 					if (results.length) {
 						const candidates = this.filterAcoustIDResults(results);
 						if (candidates.length) {
@@ -111,7 +115,9 @@ export abstract class BaseMetadataIdentifier implements TrackIdentifier {
 		);
 		if (alternativeIds) {
 			const valid = alternativeIds.filter((id) => !!id.trim());
-			if (valid.length) {
+
+			// if checkAlternativeIdentities, assume the answer is actually 0 artists (usually various artists)
+			if (!alternativeIds.length || valid.length) {
 				return valid;
 			}
 		}

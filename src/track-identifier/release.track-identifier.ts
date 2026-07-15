@@ -7,12 +7,7 @@ import {
 	TrackInformationHelper,
 } from "@sdk";
 import { BaseIsrcMetadataIdentifier } from "../base-isrc-metadata.identifier.js";
-import { requestMusicBrainz } from "../util/musicbrainz.util.js";
-import {
-	MusicBrainzISRC,
-	MusicBrainzRecording,
-	MusicBrainzRelease,
-} from "../type/musicbrainz.js";
+import { MusicBrainzISRC, MusicBrainzRelease } from "../type/musicbrainz.js";
 import { getBestAcoustIdRecording } from "../util/acoustid.util.js";
 
 export class ReleaseTrackIdentifier extends BaseIsrcMetadataIdentifier {
@@ -29,10 +24,8 @@ export class ReleaseTrackIdentifier extends BaseIsrcMetadataIdentifier {
 			"musicbrainz_recording_id",
 		);
 		if (recordingIdentity?.identity) {
-			const recording = await requestMusicBrainz<MusicBrainzRecording>(
-				`/recording/${recordingIdentity.identity}`,
-				logger,
-				["releases"],
+			const recording = await this.cache.getRecording(
+				recordingIdentity.identity,
 			);
 			if (recording.releases?.length) {
 				const bestRelease = this.selectBestRelease(recording.releases);
@@ -54,11 +47,7 @@ export class ReleaseTrackIdentifier extends BaseIsrcMetadataIdentifier {
 			return null;
 		}
 
-		const recording = await requestMusicBrainz<MusicBrainzRecording>(
-			`/recording/${primaryRecordingId}`,
-			logger,
-			["releases"],
-		);
+		const recording = await this.cache.getRecording(primaryRecordingId);
 
 		if (recording.releases?.length) {
 			const bestRelease = this.selectBestRelease(recording.releases);

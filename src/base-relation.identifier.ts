@@ -4,11 +4,13 @@ import {
 	ArtistIdentifier,
 	ArtistInformationHelper,
 } from "@sdk";
-import { MusicBrainzArtist, MusicBrainzRelation } from "./type/musicbrainz.js";
-import { requestMusicBrainz } from "./util/musicbrainz.util.js";
+import { MusicBrainzRelation } from "./type/musicbrainz.js";
+import { MusicBrainzCache } from "./musicbrainz.cache.js";
 
 export abstract class BaseRelationIdentifier implements ArtistIdentifier {
 	abstract readonly id: string;
+
+	constructor(private readonly cache: MusicBrainzCache) {}
 
 	protected abstract findServiceId(
 		relations: MusicBrainzRelation[],
@@ -16,7 +18,7 @@ export abstract class BaseRelationIdentifier implements ArtistIdentifier {
 
 	async identify(
 		helper: ArtistInformationHelper,
-		logger: Logger,
+		_logger: Logger,
 	): Promise<string[] | null> {
 		const identity = helper.getIdentity("musicbrainz_artist_id");
 
@@ -24,13 +26,7 @@ export abstract class BaseRelationIdentifier implements ArtistIdentifier {
 			return null;
 		}
 
-		const artist = await requestMusicBrainz<MusicBrainzArtist>(
-			`/artist/${identity.identity}`,
-			logger,
-			["url-rels"],
-		);
-
-		// logger.debug(artist);
+		const artist = await this.cache.getArtist(identity.identity);
 
 		if (artist.relations?.length) {
 			const serviceIds = this.findServiceId(artist.relations);

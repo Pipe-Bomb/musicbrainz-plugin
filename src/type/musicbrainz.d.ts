@@ -15,6 +15,7 @@ export interface MusicBrainzRecordingResponse {
 	"artist-credit"?: MusicBrainzArtistCredit[];
 	rating?: MusicBrainzRating;
 	genres?: MusicBrainzGenre[];
+	releases?: MusicBrainzRelease[];
 }
 
 export interface MusicBrainzMultipleResourceResponse {

@@ -5,17 +5,18 @@ import {
 	IdentifierDependency,
 	Logger,
 } from "@sdk";
-import { requestMusicBrainz } from "../util/musicbrainz.util.js";
-import { MusicBrainzReleaseGroup } from "../type/musicbrainz.js";
 import { VARIOUS_ARTISTS_UUID } from "../constants.js";
+import { MusicBrainzCache } from "../musicbrainz.cache.js";
 
 export class MusicBrainzArtistAlbumIdentifier implements AlbumIdentifier {
 	public target: AlbumIdentifierTarget = "artist";
 	public id = "musicbrainz_artist_id";
 
+	constructor(private readonly cache: MusicBrainzCache) {}
+
 	async identify(
 		helper: AlbumInformationHelper,
-		logger: Logger,
+		_logger: Logger,
 	): Promise<string[] | null> {
 		const releaseGroupIdentifier = await helper.getIdentity(
 			"musicbrainz_release_group_id",
@@ -24,10 +25,8 @@ export class MusicBrainzArtistAlbumIdentifier implements AlbumIdentifier {
 			return null;
 		}
 
-		const releaseGroup = await requestMusicBrainz<MusicBrainzReleaseGroup>(
-			`/release-group/${releaseGroupIdentifier.identity}`,
-			logger,
-			["artist-credits", "annotation", "tags", "genres"],
+		const releaseGroup = await this.cache.getReleaseGroup(
+			releaseGroupIdentifier.identity,
 		);
 
 		const artists: string[] = [];
