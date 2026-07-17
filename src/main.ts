@@ -1,7 +1,6 @@
 import type PipeBomb from "@sdk";
 import { CoverArtArchiveAttributeSource } from "./attribute-source/cover-art-archive.attribute-source.js";
 import { MusicBrainzAttributeSource } from "./attribute-source/musicbrainz.attribute-source.js";
-import { AcoustIDTrackIdentifier } from "./track-identifier/acoustid.track-identifier.js";
 import { ArtistTrackIdentifier } from "./track-identifier/artist.track-identifier.ts.js";
 import { RecordingTrackIdentifier } from "./track-identifier/recording.track-identifier.js";
 import { ReleaseGroupTrackIdentifier } from "./track-identifier/release-group.track-identifier.js";
@@ -14,6 +13,8 @@ import { MusicBrainzArtistAlbumIdentifier } from "./album-identifier/artist.albu
 import { MusicBrainzConfigManager } from "./musicbrainz.config-manager.js";
 import { YoutubeHandleArtistIdentifier } from "./artist-identifier/youtube-handle.artist-identifier.js";
 import { YoutubeChannelIdArtistIdentifier } from "./artist-identifier/youtube-channel-id.artist-identifier.js";
+import { MusicBrainzCache } from "./musicbrainz.cache.js";
+import path from "path";
 
 export default class Plugin implements PipeBomb.Plugin {
 	private api!: PipeBomb.PluginApiContext;
@@ -29,29 +30,47 @@ export default class Plugin implements PipeBomb.Plugin {
 		const config = new MusicBrainzConfigManager();
 		this.api.registerConfigManager(config);
 
-		this.api.registerTrackIdentifier(new AcoustIDTrackIdentifier(config));
-		this.api.registerTrackIdentifier(new ArtistTrackIdentifier(config));
-		this.api.registerTrackIdentifier(new RecordingTrackIdentifier(config));
-		this.api.registerTrackIdentifier(new ReleaseGroupTrackIdentifier(config));
-		// this.api.registerTrackIdentifier(new ReleaseTrackIdentifier());
-
-		this.api.registerArtistIdentifier(new SpotifyArtistIdentifier());
-		this.api.registerArtistIdentifier(new DiscogsArtistIdentifier());
-		this.api.registerArtistIdentifier(
-			new SoundCloudArtistPermalinkIdentifier(),
-		);
-		this.api.registerArtistIdentifier(
-			new MusicBrainzArtistIdArtistIdentifier(),
-		);
-		this.api.registerArtistIdentifier(new YoutubeHandleArtistIdentifier());
-		this.api.registerArtistIdentifier(new YoutubeChannelIdArtistIdentifier());
-
-		this.api.registerAlbumIdentifier(new MusicBrainzArtistAlbumIdentifier());
-
-		this.api.registerAttributeSource(new MusicBrainzAttributeSource());
-		this.api.registerAttributeSource(new CoverArtArchiveAttributeSource());
-
 		this.api.registerExternalUrlSource(new MusicBrainzExternalUrlSource());
+
+		this.api.requestCacheDirectory().then((cacheDir) => {
+			const cache = new MusicBrainzCache(
+				path.join(cacheDir, "musicbrainz-cache.db"),
+				this.logger,
+			);
+
+			this.api.registerTrackIdentifier(
+				new ArtistTrackIdentifier(config, cache),
+			);
+			this.api.registerTrackIdentifier(
+				new RecordingTrackIdentifier(config, cache),
+			);
+			this.api.registerTrackIdentifier(
+				new ReleaseGroupTrackIdentifier(config, cache),
+			);
+
+			this.api.registerArtistIdentifier(new SpotifyArtistIdentifier(cache));
+			this.api.registerArtistIdentifier(new DiscogsArtistIdentifier(cache));
+			this.api.registerArtistIdentifier(
+				new SoundCloudArtistPermalinkIdentifier(cache),
+			);
+			this.api.registerArtistIdentifier(
+				new MusicBrainzArtistIdArtistIdentifier(cache),
+			);
+			this.api.registerArtistIdentifier(
+				new YoutubeHandleArtistIdentifier(cache),
+			);
+			this.api.registerArtistIdentifier(
+				new YoutubeChannelIdArtistIdentifier(cache),
+			);
+
+			this.api.registerAlbumIdentifier(
+				new MusicBrainzArtistAlbumIdentifier(cache),
+			);
+
+			this.api.registerAttributeSource(new MusicBrainzAttributeSource(cache));
+
+			this.api.registerAttributeSource(new CoverArtArchiveAttributeSource());
+		});
 	}
 
 	disable() {}

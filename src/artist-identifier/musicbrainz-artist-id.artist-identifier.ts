@@ -11,6 +11,7 @@ import {
 	MusicBrainzMultipleResourceResponse,
 	MusicBrainzResource,
 } from "../type/musicbrainz.js";
+import { MusicBrainzCache } from "../musicbrainz.cache.js";
 
 interface Url {
 	url: string;
@@ -19,6 +20,8 @@ interface Url {
 
 export class MusicBrainzArtistIdArtistIdentifier implements ArtistIdentifier {
 	public readonly id = "musicbrainz_artist_id";
+
+	constructor(private readonly cache: MusicBrainzCache) {}
 
 	getDependencies(): IdentifierDependency[] {
 		return [];

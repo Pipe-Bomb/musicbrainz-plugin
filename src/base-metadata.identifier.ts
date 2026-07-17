@@ -6,37 +6,52 @@ import {
 	Logger,
 } from "@sdk";
 import { ICommonTagsResult } from "music-metadata";
-import { getAcoustIdResults } from "./util/acoustid.util.js";
 import { getTrackMetadata } from "./util/track.util.js";
 import { AcoustIdResult } from "./type/acoustid.js";
 import { MusicBrainzConfigManager } from "./musicbrainz.config-manager.js";
+import { MusicBrainzCache } from "./musicbrainz.cache.js";
 
 const MATCH_THRESHOLD = 0.9;
 
 export abstract class BaseMetadataIdentifier implements TrackIdentifier {
 	abstract readonly id: string;
 	abstract readonly target: TrackIdentifierTarget;
-	protected abstract tag: keyof ICommonTagsResult | null;
+	protected abstract tags: (keyof ICommonTagsResult)[] | null;
+
 	protected abstract retrieveFromAcoustId(
 		results: AcoustIdResult[],
+		duration: number,
 	): string[] | null;
 
-	constructor(private readonly config: MusicBrainzConfigManager) {}
+	protected async checkAlternativeIdentities(
+		helper: TrackInformationHelper,
+		logger: Logger,
+	): Promise<string[] | null> {
+		return null;
+	}
+
+	constructor(
+		private readonly config: MusicBrainzConfigManager,
+		protected readonly cache: MusicBrainzCache,
+	) {}
 
 	protected async checkMetadata(helper: TrackInformationHelper) {
 		const metadata = await getTrackMetadata(helper);
 		if (metadata) {
-			if (
-				this.tag &&
-				!this.config.isTagIgnored(this.tag) &&
-				this.tag in metadata.common
-			) {
-				const value = metadata.common[this.tag];
-				if (typeof value == "string") {
-					return [value];
-				}
-				if (Array.isArray(value) && !value.some((v) => typeof v != "string")) {
-					return value as string[];
+			if (this.tags) {
+				for (const tag of this.tags) {
+					if (tag && !this.config.isTagIgnored(tag) && tag in metadata.common) {
+						const value = metadata.common[tag];
+						if (typeof value == "string") {
+							return [value];
+						}
+						if (
+							Array.isArray(value) &&
+							!value.some((v) => typeof v != "string")
+						) {
+							return value as string[];
+						}
+					}
 				}
 			}
 		}
@@ -49,15 +64,29 @@ export abstract class BaseMetadataIdentifier implements TrackIdentifier {
 		if (identity) {
 			const clientId = await this.config.getAcoustIdClientId();
 			if (clientId) {
-				const results = await getAcoustIdResults(identity.identity, clientId);
-				if (results?.length) {
-					const candidates = this.filterAcoustIDResults(results);
-					if (candidates.length) {
-						const identities = this.retrieveFromAcoustId(candidates);
-						if (identities) {
-							const valid = identities.filter((id) => !!id.trim());
-							if (valid.length) {
-								return valid;
+				const [durationString, fingerprint, ...extra] =
+					identity.identity.split(":");
+				const duration = Number(durationString);
+
+				if (!extra.length && fingerprint && Number.isFinite(duration)) {
+					const results = await this.cache.getAcoustIdResults(
+						fingerprint,
+						duration,
+						clientId,
+					);
+
+					if (results.length) {
+						const candidates = this.filterAcoustIDResults(results);
+						if (candidates.length) {
+							const identities = this.retrieveFromAcoustId(
+								candidates,
+								duration,
+							);
+							if (identities) {
+								const valid = identities.filter((id) => !!id.trim());
+								if (valid.length) {
+									return valid;
+								}
 							}
 						}
 					}
@@ -70,12 +99,25 @@ export abstract class BaseMetadataIdentifier implements TrackIdentifier {
 
 	async identify(
 		helper: TrackInformationHelper,
-		_logger: Logger,
+		logger: Logger,
 	): Promise<string[] | null> {
 		const metadataIds = await this.checkMetadata(helper);
 		if (metadataIds) {
 			const valid = metadataIds.filter((id) => !!id.trim());
 			if (valid.length) {
+				return valid;
+			}
+		}
+
+		const alternativeIds = await this.checkAlternativeIdentities(
+			helper,
+			logger,
+		);
+		if (alternativeIds) {
+			const valid = alternativeIds.filter((id) => !!id.trim());
+
+			// if checkAlternativeIdentities, assume the answer is actually 0 artists (usually various artists)
+			if (!alternativeIds.length || valid.length) {
 				return valid;
 			}
 		}
@@ -93,9 +135,7 @@ export abstract class BaseMetadataIdentifier implements TrackIdentifier {
 		}
 
 		const topScore = candidates[0]!.score;
-		const topTier = candidates.filter(
-			(c) => Math.abs(c.score - topScore) < 0.001,
-		);
+		const topTier = candidates.filter((c) => c.score === topScore);
 
 		const withMetadata = topTier.filter(
 			(c) => c.recordings && c.recordings.length > 0,

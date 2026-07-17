@@ -12,19 +12,16 @@ import {
 	TrackMetadata,
 } from "@sdk";
 import { AxiosError } from "axios";
-import {
-	MusicBrainzArtist,
-	MusicBrainzRecordingResponse,
-	MusicBrainzReleaseGroup,
-} from "../type/musicbrainz.js";
-import { requestMusicBrainz } from "../util/musicbrainz.util.js";
 import { VARIOUS_ARTISTS_UUID } from "../constants.js";
+import { MusicBrainzCache } from "../musicbrainz.cache.js";
 
 export class MusicBrainzAttributeSource implements AttributeSource {
 	private api!: AttributeSourceApiContext;
 	private logger!: Logger;
 
 	public readonly id = "musicbrainz";
+
+	constructor(private readonly cache: MusicBrainzCache) {}
 
 	getName() {
 		return "MusicBrainz";
@@ -145,11 +142,7 @@ export class MusicBrainzAttributeSource implements AttributeSource {
 		}
 
 		try {
-			const data = await requestMusicBrainz<MusicBrainzRecordingResponse>(
-				`/recording/${recordingIdentity.identity}`,
-				this.logger,
-				["artist-credits", "genres", "ratings"],
-			);
+			const data = await this.cache.getRecording(recordingIdentity.identity);
 
 			const trackAttributes: AttributeValue[] = [];
 			if (data.title) {
@@ -236,23 +229,7 @@ export class MusicBrainzAttributeSource implements AttributeSource {
 		const attributes: AttributeValue[] = [];
 
 		if (artistIdentity) {
-			const data = await requestMusicBrainz<MusicBrainzArtist>(
-				`/artist/${artistIdentity.identity}`,
-				this.logger,
-				[
-					"aliases",
-					"annotation",
-					"tags",
-					"ratings",
-					"genres",
-					"url-rels",
-					"area-rels",
-					"artist-rels",
-					"label-rels",
-					"place-rels",
-					"event-rels",
-				],
-			);
+			const data = await this.cache.getArtist(artistIdentity.identity);
 
 			attributes.push({
 				key: "name",
@@ -307,10 +284,8 @@ export class MusicBrainzAttributeSource implements AttributeSource {
 			};
 		}
 
-		const releaseGroup = await requestMusicBrainz<MusicBrainzReleaseGroup>(
-			`/release-group/${releaseGroupId.identity}`,
-			this.logger,
-			["artist-credits", "annotation", "tags", "genres"],
+		const releaseGroup = await this.cache.getReleaseGroup(
+			releaseGroupId.identity,
 		);
 
 		const attributes: AttributeValue[] = [

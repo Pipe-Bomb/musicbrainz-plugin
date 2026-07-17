@@ -2,7 +2,6 @@ import Axios, { AxiosError, RawAxiosRequestHeaders } from "axios";
 import { Queue } from "./queue.js";
 import { USER_AGENT } from "../constants.js";
 import { Logger } from "@sdk";
-import { Cache } from "./cache.js";
 
 const MB_BASE_URL = "https://musicbrainz.org/ws/2";
 const HEADERS: RawAxiosRequestHeaders = {
@@ -11,10 +10,6 @@ const HEADERS: RawAxiosRequestHeaders = {
 };
 
 const queue = new Queue(1_100);
-const cache = new Cache<string, any>({
-	maxEntries: 30,
-	timeout: 60_000,
-});
 
 export async function requestMusicBrainz<T>(
 	url: string,
@@ -28,14 +23,7 @@ export async function requestMusicBrainz<T>(
 	}
 	const fullUrl = `${url}${url.includes("?") ? "&" : "?"}${params.toString()}`;
 
-	const cachedValue = cache.get(fullUrl);
-	if (cachedValue) {
-		return cachedValue;
-	}
-
-	const value = await queue.add(() => internalRequest<T>(fullUrl, logger));
-	cache.set(fullUrl, value);
-	return value;
+	return await queue.add(() => internalRequest<T>(fullUrl, logger));
 }
 
 async function internalRequest<T>(url: string, logger: Logger) {
